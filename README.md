@@ -5,7 +5,7 @@ School project
 | Name                  |NEPTUN|Favourite optimizer|
 |:----------------------|:-----|:------------------|
 |Szénássy Márton        |HIYXIQ|ADAM               |
-|||
+|Nagy Dániel            |UU5SCQ|SGD                |
 |||
 
 ## Git use
