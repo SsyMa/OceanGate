@@ -13,7 +13,7 @@ import tensorflow as tf
 from typing import Tuple
 from sklearn.model_selection import train_test_split
 
-from config import (TRAIN_IMAGES_DIR, TRAIN_METADATA_CSV, IMG_SIZE, BATCH_SIZE)
+from config import (TRAIN_IMAGES_DIR, TRAIN_METADATA_CSV, IMG_SIZE, BATCH_SIZE, RANDOM_SEED)
 
 class ShipPreprocessor:
     """Preprocessing pipeline for Airbus Ship Detection."""
@@ -23,15 +23,16 @@ class ShipPreprocessor:
     
     def training_augmentation(self, image: tf.Tensor, mask: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
         """Strong augmentation pipeline for training."""
+        
         if tf.random.uniform(()) > 0.5:
             # Horizontal flip
-            image = tf.image.random_flip_left_right(image)
-            mask = tf.image.random_flip_left_right(mask)
+            image = tf.image.flip_left_right(image)
+            mask = tf.image.flip_left_right(mask)
         
         if tf.random.uniform(()) > 0.5:
             # Vertical flip
-            image = tf.image.random_flip_up_down(image)
-            mask = tf.image.random_flip_up_down(mask)
+            image = tf.image.flip_up_down(image)
+            mask = tf.image.flip_up_down(mask)
         
         # Random rotation (0, 90, 180, 270 degrees)
         rotation = tf.random.uniform([], 0, 4, dtype=tf.int32)
