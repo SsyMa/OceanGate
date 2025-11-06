@@ -9,6 +9,14 @@ This project is made for the [Airbus Ship Detection Challenge](https://www.kaggl
 |Varga-Labóczki Vazul   |H947XW|
 
 ## Milestone 1
+- **download_dataset.py**
+    - Downloads and extracts the database to the data folder.
+
+*Since the competition database could only be downloaded by authenticated kaggle users, a few extra steps should be made before running this script:*
+
+*Make sure, you have an account on kaggle and accepted the terms of the challange. After that you should aquire the kaggle.json (account setting -> create new token) and place it in the C:/user/username/.kaggle folder. The script will aquire the necessary tokens for authorization from this json.*
+
+*Be aware that the datbase zip alone is around 30Gb, so only run this script with a stable internet connection and expect it to take a good while.*
 - **data_loader.py**
     - Loads the dataset from the data folder.
     - Creates a single mask for each image by decoding the RLE encoded csv.
@@ -16,9 +24,6 @@ This project is made for the [Airbus Ship Detection Challenge](https://www.kaggl
     - Handles memory-efficient loading using tensorflow.
     - Handles train/validation splitting.
     - Contains a demo function to show usage.
-
-*Since the offered dataset is too large for version control, and downloading is only possible through a logged-in account, the project does not handle the downloading of the data automatically. If you wish to run the project, you must download the dataset separately and place it in the "data" folder.*
-
 - **prepocessor.py**
     - Applies data augmentation during training (while keeping the augmented mask consistent).
     - Implements test-time augmentation for boosting inference accuracy (8 image variants).
