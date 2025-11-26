@@ -4,11 +4,7 @@ from model import SegmentationModel
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import Adam
-<<<<<<< HEAD
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, TensorBoard
-=======
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard, ReduceLROnPlateau
->>>>>>> c7023f2d926a838e52f1fda3076879aafacc804b
 
 import sys
 import os
