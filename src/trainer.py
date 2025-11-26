@@ -4,7 +4,11 @@ from model import SegmentationModel
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import Adam
+<<<<<<< HEAD
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, TensorBoard
+=======
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard, ReduceLROnPlateau
+>>>>>>> c7023f2d926a838e52f1fda3076879aafacc804b
 
 import sys
 import os
@@ -60,10 +64,18 @@ def main():
                            optimizer=Adam(learning_rate=LEARNING_RATE),
                            metrics=[iou_metric, f2_metric])
 
+<<<<<<< HEAD
     early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1, restore_best_weights=True)
     checkpointer=ModelCheckpoint(filepath='model.keras', save_best_only=True, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1)
     tb = TensorBoard(log_dir='logs', histogram_freq=1, write_graph=1)
+=======
+    tb = TensorBoard(log_dir='logs', histogram_freq=1, write_graph=1)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
+    checkpointer = ModelCheckpoint(filepath='model.keras', save_best_only=True, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1)
+
+>>>>>>> c7023f2d926a838e52f1fda3076879aafacc804b
     steps_per_epoch = max(100, 154044 // BATCH_SIZE)
 
     network_history = model_v1.model.fit(
@@ -73,7 +85,11 @@ def main():
         steps_per_epoch= steps_per_epoch,
         validation_steps=38512 // BATCH_SIZE,
         verbose=1,
+<<<<<<< HEAD
         callbacks=[early_stopping, reduce_lr, checkpointer, tb])
+=======
+        callbacks=[tb, early_stopping, checkpointer, reduce_lr])
+>>>>>>> c7023f2d926a838e52f1fda3076879aafacc804b
 
 
 if __name__ == "__main__":
