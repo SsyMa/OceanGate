@@ -4,7 +4,7 @@ from model import SegmentationModel
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard, ReduceLROnPlateau
 
 import sys
 import os
@@ -62,7 +62,9 @@ def main():
                            metrics=[iou_metric, f2_metric])
 
     tb = TensorBoard(log_dir='logs', histogram_freq=1, write_graph=1)
-    checkpointer=ModelCheckpoint(filepath='model.keras', save_best_only=True, verbose=1)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
+    checkpointer = ModelCheckpoint(filepath='model.keras', save_best_only=True, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1)
 
     steps_per_epoch = max(100, 154044 // BATCH_SIZE)
 
@@ -73,7 +75,7 @@ def main():
         steps_per_epoch= steps_per_epoch,
         validation_steps=38512 // BATCH_SIZE,
         verbose=1,
-        callbacks=[tb, checkpointer])
+        callbacks=[tb, early_stopping, checkpointer, reduce_lr])
 
 
 if __name__ == "__main__":
