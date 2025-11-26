@@ -36,6 +36,9 @@ Notes:
     - RLE masks are decoded on-the-fly during data loading
     - The pipeline uses TensorFlow's AUTOTUNE for optimal performance
 """
+import sys
+import os
+sys.path.insert(0, '.')
 
 import tensorflow as tf
 import pandas as pd
@@ -86,7 +89,7 @@ class ShipDatasetLoader:
         self,
         train_image_dir: str,
         masks_csv_path: str,
-        img_size: Tuple[int, int] = (768, 768),
+        img_size: Tuple[int, int] = (256, 256),
         seed: int = 42
     ) -> None:
         """
@@ -264,6 +267,7 @@ class ShipDatasetLoader:
         image_path: str,
         mask: np.ndarray
     ) -> Tuple[tf.Tensor, tf.Tensor]:
+
         """
         Load and preprocess a single image and its corresponding mask.
 
@@ -301,9 +305,11 @@ class ShipDatasetLoader:
         # Normalize to [0, 1] range
         image = tf.cast(image, tf.float32) / 255.0
 
+        mask = tf.convert_to_tensor(mask)
+        mask = tf.squeeze(mask)
         # Prepare mask
         # Add channel dimension: (H, W) -> (H, W, 1)
-        mask = tf.expand_dims(mask, -1)
+        mask = tf.reshape(mask, [768, 768, 1])
 
         # Resize mask using nearest neighbor interpolation
         # CRITICAL: Use 'nearest' method for binary masks
@@ -504,11 +510,13 @@ class ShipDatasetLoader:
         train_loader = ShipDatasetLoader.__new__(ShipDatasetLoader)
         train_loader.__dict__.update(self.__dict__)
         train_loader.df_grouped = train_df
+        print(f"TRAIN_LOADER LEN: {len(train_loader.df_grouped)}")
 
         # Validation loader
         val_loader = ShipDatasetLoader.__new__(ShipDatasetLoader)
         val_loader.__dict__.update(self.__dict__)
         val_loader.df_grouped = val_df
+        print(f"VAL_LOADER LEN: {len(val_loader.df_grouped)}")
 
         # Create train dataset
         # Training: shuffle=True, balance_classes=True

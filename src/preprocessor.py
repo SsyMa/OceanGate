@@ -127,12 +127,12 @@ def main():
     # To train keras model, use:
     # model.fit(preprocessed_train_ds, validation_data=val_ds, epochs=50)
     
-    print("🧪 Testing preprocessing pipeline:")
+    print("Testing preprocessing pipeline:")
     for images, masks in preprocessed_train_ds.take(1):
         print(f"  Images shape: {images.shape}, range: [{tf.reduce_min(images):.3f}, {tf.reduce_max(images):.3f}]")
         print(f"  Masks shape: {masks.shape}")
     
-    print("✅ Preprocessor test successful!")
+    print("Preprocessor test successful!")
 
 
 if __name__ == "__main__":
