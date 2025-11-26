@@ -43,4 +43,31 @@ This project is made for the [Airbus Ship Detection Challenge](https://www.kaggl
 6. Merge branches
 7. After the project has been developped we merge back to main.
 
+## Starting training
 
+To get started with training in this project on your local computer (using WSL), follow the steps below.
+
+1. Create a Python virtual environment and activate it (inside WSL):
+
+```bash
+# create venv
+python -m venv venv
+
+# activate the virtual environment
+source venv/bin/activate
+```
+
+2. Install required dependencies from `requirements.txt`:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Download and place the Airbus Ship Detection dataset into the `data/` folder (see Kaggle competition page).
+
+4. Start training using the trainer script:
+
+```bash
+python src/trainer.py
+
+```
