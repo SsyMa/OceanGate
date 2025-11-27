@@ -63,6 +63,14 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+*If you want to use your GPU for the training, you need to install the appropriate tensorflow version:*
+
+```bash
+pip install tensorflow[and-cuda]
+```
+
+*Run src/tf_test.py to check if tensorflow can see the GPU on your machine.*
+
 3. Download and place the Airbus Ship Detection dataset into the `data/` folder (see Kaggle competition page).
 
 4. Start training using the trainer script:
@@ -71,3 +79,14 @@ pip install -r requirements.txt
 python src/trainer.py
 
 ```
+## Evaluation
+You can find the evaluation of the best model at the time in the notebooks/evaluation.py notebook. The notebook saves the outputs of the previous run, so you can instantly see the results. (Metrics, Tensorboard, Predicted mask visualization).
+
+If you wish to run the evaluation by yourself, make sure to follow the steps listed above in the "Starting training" section.
+
+*If the first block throws an error related to "bad backend", run the following command at the root of the project, then restart the notebook kernel:*
+```bash
+echo "backend : Agg" > ~/.config/matplotlib/matplotlibrc
+
+```
+

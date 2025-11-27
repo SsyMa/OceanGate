@@ -3,9 +3,7 @@ from preprocessor import ShipPreprocessor
 from model import SegmentationModel
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
-from keras.models import load_model
 from src.metrics import iou_metric, f2_metric
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, TensorBoard
 
@@ -13,33 +11,7 @@ import sys
 import os
 sys.path.insert(0, '.')
 
-from config import (TRAIN_IMAGES_DIR, TRAIN_METADATA_CSV, IMG_SIZE, BATCH_SIZE, RANDOM_SEED, EPOCHS, LEARNING_RATE, VALIDATION_SPLIT)
-
-def iou_metric(y_true, y_pred, smooth=1e-6):
-    # Ensure both are float32
-    y_true = tf.cast(y_true, tf.float32)
-    y_pred = tf.cast(y_pred > 0.0, tf.float32)
-
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-    intersection = K.sum(y_true_f * y_pred_f)
-    union = K.sum(y_true_f) + K.sum(y_pred_f) - intersection
-    iou = (intersection + smooth) / (union + smooth)
-    return iou
-
-def f2_metric(y_true, y_pred, beta=2, smooth=1e-6):
-    y_true = tf.cast(y_true, tf.float32)
-    y_pred = tf.cast(y_pred > 0.0, tf.float32)
-
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-
-    tp = K.sum(y_true_f * y_pred_f)
-    fp = K.sum(y_pred_f) - tp
-    fn = K.sum(y_true_f) - tp
-
-    f2 = (1 + beta**2) * tp / ((1 + beta**2) * tp + beta**2 * fn + fp + smooth)
-    return f2
+from config import (TRAIN_IMAGES_DIR, TRAIN_METADATA_CSV, IMG_SIZE, BATCH_SIZE, EPOCHS, LEARNING_RATE, VALIDATION_SPLIT)
 
 
 def main():
