@@ -1,10 +1,9 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, BatchNormalization, Conv2DTranspose
 from tensorflow.keras.models import Sequential
-
-# import sys
-# import os
-# sys.path.insert(0, '.')
+import sys
+import os
+sys.path.insert(0, '.')
 
 from config import (TRAIN_IMAGES_DIR, TRAIN_METADATA_CSV, IMG_HEIGHT, IMG_WIDTH, BATCH_SIZE, RANDOM_SEED)
 
@@ -47,4 +46,3 @@ class SegmentationModel():
 
 if __name__ == "__main__":
     pass
-    #model = SegmentationModel()

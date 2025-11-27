@@ -22,10 +22,10 @@ IMG_SIZE = (IMG_HEIGHT, IMG_WIDTH)
 # ============================================================================
 # TRAINING PARAMETERS
 # ============================================================================
-BATCH_SIZE = 64
-EPOCHS = 50
-LEARNING_RATE = 0.001
-VALIDATION_SPLIT = 0.15
+BATCH_SIZE = 32
+EPOCHS = 1000
+LEARNING_RATE = 0.003
+VALIDATION_SPLIT = 0.2
 
 # ============================================================================
 # SEED FOR REPRODUCIBILITY
