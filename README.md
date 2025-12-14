@@ -8,6 +8,10 @@ This project is made for the [Airbus Ship Detection Challenge](https://www.kaggl
 |Nagy Dániel            |UU5SCQ|
 |Varga-Labóczki Vazul   |H947XW|
 
+## Submission details
+Megajánlott jegyért
+The report will be uploaded before the exam in accordance with the documents uploaded to moodle.
+
 ## Milestone 1
 - **download_dataset.py**
     - Downloads and extracts the database to the data folder.
