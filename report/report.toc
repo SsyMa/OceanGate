@@ -1,0 +1,13 @@
+\contentsline {section}{\numberline {1}Introduction}{2}{section.1}%
+\contentsline {section}{\numberline {2}Description of topic and previous solutions}{2}{section.2}%
+\contentsline {section}{\numberline {3}Architecture}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}First attempt}{2}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Final model}{2}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Model}{2}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2}Callbacks}{3}{subsubsection.3.2.2}%
+\contentsline {section}{\numberline {4}Implementation}{3}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Training}{3}{subsection.4.1}%
+\contentsline {subsubsection}{\numberline {4.1.1}Dataset}{3}{subsubsection.4.1.1}%
+\contentsline {subsubsection}{\numberline {4.1.2}Preprocessing}{4}{subsubsection.4.1.2}%
+\contentsline {subsubsection}{\numberline {4.1.3}Problems}{4}{subsubsection.4.1.3}%
+\contentsline {section}{\numberline {5}Summary}{4}{section.5}%
