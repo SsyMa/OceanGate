@@ -7,6 +7,13 @@ sys.path.insert(0, '.')
 
 from config import (TRAIN_IMAGES_DIR, TRAIN_METADATA_CSV, IMG_HEIGHT, IMG_WIDTH, BATCH_SIZE, RANDOM_SEED)
 
+'''
+Wrapper class to create a simple fully convolutional network for segmentation
+- strided convolution for downscaling (256 -> 128 -> 64 -> 32 -> 16)
+- BatchNormalization after every hidden layer
+- Transpose convolution for upscaling
+'''
+
 class SegmentationModel():
     def __init__(self):
         self.model = Sequential()

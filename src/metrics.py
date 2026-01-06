@@ -2,6 +2,11 @@ import tensorflow as tf
 from tensorflow.keras.utils import register_keras_serializable
 from tensorflow.keras import backend as K
 
+
+'''
+    Module to define segmentation specific metrics (Intersection over union, F2)
+'''
+
 @register_keras_serializable()
 def iou_metric(y_true, y_pred, smooth=1e-6):
     # Ensure both are float32

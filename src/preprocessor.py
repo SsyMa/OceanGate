@@ -52,41 +52,6 @@ class ShipPreprocessor:
         
         return image, mask
     
-    def test_augmentation(self, image: tf.Tensor) -> list:
-        """
-        Test-time augmentation (TTA): 8 augmented versions.
-
-        TTA boosts test accuracy by also performing inference in augmented versions 
-        of the original Image and then avarage out the result.
-
-        This can help inference performance since the model essentially avaraging out its own errors.
-
-        These augmentations are deterministic and reversible if needed.
-        """
-        aug_images = []
-        
-        # Original
-        aug_images.append(image)
-        
-        # Horizontal flip
-        aug_images.append(tf.image.flip_left_right(image))
-        
-        # Vertical flip
-        aug_images.append(tf.image.flip_up_down(image))
-        
-        # Both flips
-        aug_images.append(tf.image.flip_left_right(tf.image.flip_up_down(image)))
-        
-        # 90 degree rotations
-        aug_images.append(tf.image.rot90(image))
-        aug_images.append(tf.image.rot90(tf.image.flip_left_right(image)))
-        
-        # 270 degree rotations  
-        aug_images.append(tf.image.rot90(image, k=3))
-        aug_images.append(tf.image.rot90(tf.image.flip_left_right(image), k=3))
-        
-        return aug_images
-    
     def preprocess_pipeline(
         self, 
         dataset: tf.data.Dataset, 
@@ -108,7 +73,7 @@ class ShipPreprocessor:
 
 
 def main():
-    """Test the preprocessor."""
+    """Example main function to test prepocessor."""
     from src.data_loader import ShipDatasetLoader
     
     # Test with data loader
@@ -121,7 +86,7 @@ def main():
     preprocessor = ShipPreprocessor()
     
     # Test augmentation pipeline
-    train_ds, val_ds = loader.train_val_split(batch_size=BATCH_SIZE)
+    train_ds, _ = loader.train_val_split(batch_size=BATCH_SIZE)
     preprocessed_train_ds = preprocessor.preprocess_pipeline(train_ds, training=True, augment=True)
 
     # To train keras model, use:

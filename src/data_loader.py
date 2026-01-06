@@ -325,216 +325,80 @@ class ShipDatasetLoader:
         batch_size: int = 8,
         shuffle: bool = True,
         balance_classes: bool = True,
-        subset: Optional[int] = None
+        df: Optional[pd.DataFrame] = None
     ) -> tf.data.Dataset:
-        """
-        Create a TensorFlow Dataset with optimized pipeline for training/validation.
+        '''
+         Creates a Balanced mini-batch
+         - The batch contains the same amount of images with and without ships (50-50%)
+         - Merges the ship masks for the specific images
+        '''
+        df = self.df_grouped.copy() if df is None else df.copy()
 
-        This method implements the recommended tf.data.Dataset best practices:
-            1. Lazy loading: images are loaded from disk on-demand, not pre-loaded
-            2. Parallel processing: multiple images are loaded simultaneously
-            3. Prefetching: next batch is prepared while GPU processes current batch
-            4. Shuffling: data is shuffled for better training (if enabled)
-            5. Batching: samples are grouped into batches
-
-        The pipeline is designed to maximize GPU utilization by ensuring data is
-        always ready when the GPU needs it.
-
-        Args:
-            batch_size: Number of samples per batch.
-                Typical values: 4-32 depending on GPU memory.
-            shuffle: Whether to shuffle the dataset.
-                Set True for training, False for validation.
-            balance_classes: Whether to balance ship/no-ship classes.
-                If True, samples equal number of images with and without ships.
-                Useful for dealing with class imbalance.
-            subset: If specified, use only this many images (for debugging/testing).
-                Example: subset=1000 uses only 1000 images.
-
-        Returns:
-            tf.data.Dataset object ready for model.fit().
-            Each iteration yields a tuple (images, masks) where:
-                - images: shape (batch_size, img_size[0], img_size[1], 3)
-                - masks: shape (batch_size, img_size[0], img_size[1], 1)
-        """
-        # Work with a copy to avoid modifying the original dataframe
-        df = self.df_grouped.copy()
-
-        # Subset for debugging/testing
-        # Useful during development to iterate faster
-        if subset:
-            df = df.sample(n=min(subset, len(df)), random_state=self.seed)
-            print(f"Debug mode: using {len(df)} images")
-
-        # Class balancing: handle imbalanced dataset
-        # The dataset has many more images without ships than with ships
-        # Balancing ensures equal representation during training
         if balance_classes:
-            # Separate images with and without ships
             ships = df[df['has_ship']]
             no_ships = df[~df['has_ship']]
-
-            # Sample equal number of no-ship images to match ship images
             no_ships = no_ships.sample(n=len(ships), random_state=self.seed)
-
-            # Combine and shuffle
             df = pd.concat([ships, no_ships]).sample(frac=1, random_state=self.seed)
-            print(f"Balanced dataset: {len(df)} images (50% with ships, 50% without)")
 
-        # Prepare data for pipeline
-        # Store image paths and RLE lists (decode on-the-fly during iteration)
-        image_paths = []
-        rle_data = []
+        # 1. Start with simple tensors (just strings)
+        image_paths = [str(self.train_image_dir / rid) for rid in df['ImageId']]
+        # Join RLEs with a pipe to keep it a simple string
+        rle_strings = [('|||'.join(r) if len(r) > 0 else '') for r in df['EncodedPixels']]
 
-        for _, row in df.iterrows():
-            img_path = str(self.train_image_dir / row['ImageId'])
-            image_paths.append(img_path)
+        dataset = tf.data.Dataset.from_tensor_slices((image_paths, rle_strings))
 
-            # Store RLE strings as a single joined string (for serialization)
-            rle_list = row['EncodedPixels']
-            if len(rle_list) == 0:
-                rle_data.append('')  # Empty mask
-            else:
-                # Join multiple RLE masks with a special separator
-                rle_data.append('|||'.join(rle_list))
-
-        # Create a generator function for lazy loading
-        def data_generator():
-            for img_path, rle_str in zip(image_paths, rle_data):
-                # Decode mask on-the-fly
-                if rle_str == '':
-                    mask = np.zeros((768, 768), dtype=np.uint8)
-                else:
-                    rle_list = rle_str.split('|||')
-                    mask = self.combine_masks(rle_list)
-                yield img_path, mask
-
-        # Create tf.data.Dataset from generator
-        dataset = tf.data.Dataset.from_generator(
-            data_generator,
-            output_signature=(
-                tf.TensorSpec(shape=(), dtype=tf.string),
-                tf.TensorSpec(shape=(768, 768), dtype=tf.uint8)
-            )
-        )
-
-        # Shuffle if requested
-        # Buffer size determines how many samples to load for shuffling
-        # Larger buffer = better shuffling but more memory
         if shuffle:
-            buffer_size = min(1000, len(df))
-            dataset = dataset.shuffle(buffer_size=buffer_size, seed=self.seed)
+            dataset = dataset.shuffle(buffer_size=1024)
 
-        # Map function: load and preprocess images
-        # Images are loaded lazily, but masks are already decoded
+        # 2. Optimization: Map with a smaller footprint
+        # Use a wrapper to handle the decoding and resizing in one call
+        def _parse_function(img_path, rle_str):
+            img_path = img_path.numpy().decode('utf-8')
+            rle_str = rle_str.numpy().decode('utf-8')
+            
+            # Load Image
+            img = tf.io.read_file(img_path)
+            img = tf.image.decode_jpeg(img, channels=3)
+            img = tf.image.resize(img, self.img_size) / 255.0
+            
+            # Decode Mask directly to smaller size if possible, or decode then resize
+            if rle_str == '':
+                mask = np.zeros((768, 768), dtype=np.uint8)
+            else:
+                mask = self.combine_masks(rle_str.split('|||'))
+            
+            mask = np.expand_dims(mask, axis=-1)
+            # Resize mask to save memory in the prefetch buffer
+            mask = tf.image.resize(mask, self.img_size, method='nearest')
+
+            mask = tf.cast(mask, tf.float32)
+            
+            return img, mask
+
         dataset = dataset.map(
-            lambda path, mask: tf.py_function(
-                self._load_and_preprocess_image,
-                [path, mask],
-                [tf.float32, tf.float32]
-            ),
+            lambda p, r: tf.py_function(_parse_function, [p, r], [tf.float32, tf.float32]),
             num_parallel_calls=tf.data.AUTOTUNE
         )
 
-        # Set explicit shapes for TensorFlow
-        # py_function loses shape information, so we need to restore it
-        dataset = dataset.map(lambda img, mask: (
-            tf.ensure_shape(img, [*self.img_size, 3]),
-            tf.ensure_shape(mask, [*self.img_size, 1])
+        # Set shapes explicitly for the Keras model
+        dataset = dataset.map(lambda i, m: (
+            tf.ensure_shape(i, [self.img_size[0], self.img_size[1], 3]),
+            tf.ensure_shape(m, [self.img_size[0], self.img_size[1], 1])
         ))
 
-        # Batch the data
-        # Combines individual samples into batches
-        dataset = dataset.batch(batch_size)
+        return dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
-        # CRITICAL: Prefetch for performance
-        # While GPU processes batch N, CPU prepares batch N+1
-        # AUTOTUNE automatically determines optimal prefetch buffer size
-        # This prevents GPU from waiting for data (maximizes GPU utilization)
-        dataset = dataset.prefetch(tf.data.AUTOTUNE)
-
-        return dataset
-
-    def train_val_split(
-        self,
-        val_split: float = 0.2,
-        batch_size: int = 8
-    ) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
-        """
-        Create train and validation datasets with stratified splitting.
-
-        Stratified splitting ensures that the proportion of ship/no-ship images
-        is the same in both train and validation sets. This is important for
-        maintaining representative validation metrics.
-
-        Args:
-            val_split: Fraction of data to use for validation.
-                Example: 0.2 means 20% validation, 80% training.
-            batch_size: Batch size for both train and validation datasets.
-
-        Returns:
-            Tuple of (train_dataset, val_dataset).
-            Both are tf.data.Dataset objects ready for model.fit().
-
-        Example:
-            # Create loader instance
-            loader = ShipDatasetLoader(
-                train_image_dir="../data/train_v2",
-                masks_csv_path="../data/train_ship_segmentations_v2.csv"
-            )
-            # Split into train and validation
-            train_ds, val_ds = loader.train_val_split(val_split=0.2, batch_size=16)
-            # Use with Keras model
-            # model.fit(train_ds, validation_data=val_ds, epochs=50)
-        """
+    def train_val_split(self, val_split=0.2, batch_size=8):
         df = self.df_grouped.copy()
-
-        # Stratified split: maintain ship/no-ship ratio in both splits
-        # This is important because the dataset is imbalanced
         train_df, val_df = train_test_split(
-            df,
-            test_size=val_split,
-            stratify=df['has_ship'],
-            random_state=self.seed
+            df, test_size=val_split, stratify=df['has_ship'], random_state=self.seed
         )
-
-        # Print split statistics
-        print(f"Train/Validation Split:")
-        print(f"  Train set: {len(train_df)} images")
-        print(f"  Validation set: {len(val_df)} images")
-
-        # Create separate loader instances for train and validation
-        # This allows different processing pipelines for each
-
-        # Training loader
-        train_loader = ShipDatasetLoader.__new__(ShipDatasetLoader)
-        train_loader.__dict__.update(self.__dict__)
-        train_loader.df_grouped = train_df
-        print(f"TRAIN_LOADER LEN: {len(train_loader.df_grouped)}")
-
-        # Validation loader
-        val_loader = ShipDatasetLoader.__new__(ShipDatasetLoader)
-        val_loader.__dict__.update(self.__dict__)
-        val_loader.df_grouped = val_df
-        print(f"VAL_LOADER LEN: {len(val_loader.df_grouped)}")
-
-        # Create train dataset
-        # Training: shuffle=True, balance_classes=True
-        train_ds = train_loader.create_dataset(
-            batch_size=batch_size,
-            shuffle=True,
-            balance_classes=True
-        )
-
-        # Create validation dataset
-        # Validation: shuffle=False, balance_classes=False
-        # We want validation to be deterministic and representative
-        val_ds = val_loader.create_dataset(
-            batch_size=batch_size,
-            shuffle=False,
-            balance_classes=False
-        )
-
+        '''
+        Creates the validation and train datasets with the given ratio
+        '''
+        train_ds = self.create_dataset(batch_size=batch_size, shuffle=True, balance_classes=True, df=train_df)
+        val_ds = self.create_dataset(batch_size=batch_size, shuffle=False, balance_classes=False, df=val_df)
+        
         return train_ds, val_ds
 
 

@@ -1,5 +1,9 @@
 import tensorflow as tf
 
+'''
+    Script to test if tensorflow can detect GPU correctly.
+'''
+
 def test():
     print(f"\nTensorflow version: {tf.__version__}")
     gpus = tf.config.list_physical_devices('GPU')

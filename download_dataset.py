@@ -2,6 +2,9 @@ import os
 import zipfile
 from kaggle.api.kaggle_api_extended import KaggleApi
 
+'''
+    Script to download the dataset into the "data" folder in the root.
+'''
 
 api = KaggleApi()
 api.authenticate()
