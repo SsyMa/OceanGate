@@ -31,17 +31,17 @@ def main():
     preprocessed_train_ds = preprocessed_train_ds.repeat()
 
     model_v1 = SegmentationModel()
-    model_v1.model.compile(loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+    model_v1.compile(loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
                            optimizer=Adam(learning_rate=LEARNING_RATE),
                            metrics=[iou_metric, f2_metric])
 
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1, restore_best_weights=True)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=15, verbose=1, restore_best_weights=True)
     checkpointer=ModelCheckpoint(filepath='model.keras', save_best_only=True, verbose=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1)
     tb = TensorBoard(log_dir='logs', histogram_freq=1, write_graph=1)
 
     steps_per_epoch = max(100, 154044 // BATCH_SIZE)
-    network_history = model_v1.model.fit(
+    network_history = model_v1.fit(
         preprocessed_train_ds,
         validation_data=val_ds,
         epochs=EPOCHS,
