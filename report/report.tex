@@ -1,15 +1,8 @@
 \documentclass{article}
 
-% if you need to pass options to natbib, use, e.g.:
 \PassOptionsToPackage{numbers, compress}{natbib}
-% before loading nips_2016
-%
-% to avoid loading the natbib package, add option nonatbib:
-% \usepackage[nonatbib]{nips_2016}
 
 \usepackage{nips_2016}
-% to compile a camera-ready version, add the [final] option, e.g.:
-% \usepackage[final]{nips_2016}
 
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
@@ -28,16 +21,6 @@
   [1ex] Deep Learning Házi feladat \\
   \large Airbus Ship Detection Challenge}
 
-% The \author macro works with any number of authors. There are two
-% commands used to separate the names and addresses of multiple
-% authors: \And and \AND.
-%
-% Using \And between authors leaves it to LaTeX to determine where to
-% break the lines. Using \AND forces a line break at that point. So,
-% if LaTeX puts 3 of 4 authors names on the first line, and the last
-% on the second line, try using \AND instead of \And before the third
-% author name.
-
 \author{
   Nagy Dániel (UU5SCQ) \\
   Szénássy Márton (HIYXIQ) \\
@@ -46,21 +29,20 @@
 
 
 \begin{document}
-% \nipsfinalcopy is no longer used
 
 \maketitle
 
 \begin{abstract}
-  This report presents our solution to the Airbus Ship Detection Challenge using a U-Net architecture for ship segmentation in satellite images.
-  We discuss our initial attempts with Segment Anything and the challenges we faced, leading us to adopt the U-Net model.
+  This report presents our solution to the Airbus Ship Detection Challenge using a fully convolutional encoder–decoder architecture for ship segmentation in satellite images.
+  We discuss our initial attempts with Segment Anything and the challenges we faced, leading us to adopt the FCN model.
   Our implementation includes various callbacks to enhance training, and we address challenges such as class imbalance through data augmentation.
   Overall, our solution demonstrates the effectiveness of deep learning techniques in addressing real-world problems in maritime surveillance.
 \end{abstract}
 
 \begin{kivonat}
-  Ebben a dolgozatban bemutatjuk a megoldásunkat az Airbus Ship Detection Challenge kihívásra, amelyben U-Net architektúrát alkalmaztunk a műholdfelvételeken megjelenő hajók szegmentálására.
-  Ismertetjük kezdeti kísérleteinket a Segment Anything modellel, valamint azokat a kihívásokat, amelyekkel szembesültünk, és amelyek arra késztettek minket, hogy a U-Net modellt válasszuk.
-  Megvalósításunk különböző callback mechanizmusokat tartalmaz a tanulási folyamat javítása érdekében, és foglalkozunk olyan kihívásokkal, mint az osztályok közötti egyensúlyhiány, amelyet adatnövelési technikákkal kezelünk.
+  Ebben a dolgozatban bemutatjuk a megoldásunkat az Airbus Ship Detection Challenge kihívásra, amelyben FCN architektúrát alkalmaztunk a műholdfelvételeken megjelenő hajók szegmentálására.
+  Ismertetjük kezdeti kísérleteinket a Segment Anything modellel, valamint azokat a kihívásokat, amelyekkel szembesültünk, és amelyek arra késztettek minket, hogy a FCN modellt válasszuk.
+  Megvalósításunk különböző callback mechanizmusokat tartalmaz a tanulási folyamat javítása érdekében, és foglalkozunk olyan kihívásokkal, mint az osztályok közötti egyensúlyhiány, amelyet adat augmentációs technikákkal kezelünk.
   Összességében megoldásunk bemutatja a mélytanulási technikák hatékonyságát a tengeri megfigyelés valós problémáinak kezelésében.
 \end{kivonat}
 
@@ -70,16 +52,15 @@
 This report presents our solution to the Airbus Ship Detection Challenge~\cite{airbus2018challenge}.
 This challenge focuses on the task of detecting ships in satellite images using deep learning techniques~\cite{goodfellow2016deep, lecun1998gradient}.
 The challenge addresses a real-world problem in maritime surveillance and ocean monitoring, where automated detection systems can significantly reduce manual labor and improve response times.
-We solved this problem by developing a convolutional neural network-based segmentation model that accurately identifies ship locations in satellite imagery.
+We solved this problem by developing a convolutional neural network-based segmentation model that accurately identifies ship locations in satellite imagery, drawing on recent advances in fully convolutional networks~\cite{long2015fcn}.
 
 \section{Description of topic and previous solutions}
 The Airbus Ship Detection Challenge is a competition hosted on the Kaggle platform, aiming to develop algorithms for detecting ships in satellite images.
 The challenge provides a dataset of high-resolution satellite images, each annotated with masks indicating the presence and location of ships.
 Participants are tasked with creating models that can accurately segment ships from the background in these images. \\
-Previous solutions include various deep learning architectures, such as U-Net~\cite{ronneberger2015unet}, Mask R-CNN~\cite{he2017maskrcnn} and Segment Anything~\cite{kirillov2023sam}.
-These models leverage convolutional neural networks (CNNs) to learn spatial hierarchies of features from the input images.
-Many participants have also employed data augmentation techniques to enhance model robustness and improve generalization to unseen data.
-
+Previous solutions include various deep learning architectures, such as U-Net~\cite{ronneberger2015unet}, Mask R-CNN~\cite{he2017maskrcnn}, DeepLabv3+~\cite{chen2018deeplab}, and Segment Anything~\cite{kirillov2023sam}.
+These models leverage convolutional neural networks (CNNs) to learn spatial hierarchies of features from the input images, often building on strong backbones like VGG~\cite{simonyan2014vgg}.
+Many participants have also employed data augmentation techniques to enhance model robustness and improve generalization to unseen data~\cite{perez2017augmentation, shorten2019survey}.
 
 \section{Architecture}
 \subsection{First attempt}
@@ -90,16 +71,24 @@ This interactive nature made it difficult to adapt the model for fully automated
 This made it impractical for our specific use case, leading us to explore alternative architectures better suited for automated segmentation tasks.
 
 \subsection{Final model}
-\subsubsection{Model}
-After evaluating various architectures, we decided to implement a U-Net model~\cite{ronneberger2015unet} for our ship detection task.
-U-Net is a convolutional neural network architecture specifically designed for biomedical image segmentation but has proven effective in various segmentation tasks, including satellite imagery analysis.
-The U-Net architecture consists of a contracting path (encoder) and an expansive path (decoder).
-The encoder captures context and features from the input images through a series of convolutional and pooling layers~\cite{simonyan2014vgg}, while the decoder reconstructs the segmentation mask using upsampling and convolutional layers~\cite{springenberg2015striving}.
+After evaluating various architectures, we implemented a fully convolutional network (FCN).
+The chosen FCN is a simple encoder–decoder network composed exclusively of convolutional layers (no dense layers), with learned downsampling via strided convolutions and learned upsampling via transpose convolutions.
+Unlike U-Net, this architecture does not use skip-connections between encoder and decoder paths.
+
+\newpage
+
+Key characteristics of our FCN:
+\begin{itemize}
+  \item Encoder: several Conv2D blocks with ReLU activations and BatchNormalization~\cite{ioffe2015batch}. Downsampling is performed using strided convolutions that reduce spatial resolution (e.g. 256 -> 128 -> 64 -> 32 -> 16).
+  \item Decoder: Conv2DTranspose layers with ReLU activations and BatchNormalization~\cite{ioffe2015batch} to restore spatial resolution back to the input size.
+  \item Classifier: a final Conv2D producing a single-channel output (kernel size 5, padding='same'). The model emits logits for binary segmentation; a sigmoid can be applied at loss/metric time.
+  \item BatchNormalization is applied after each hidden convolutional layer to stabilize training.
+\end{itemize}
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.8\textwidth]{Pictures/model.png}
-    \caption{Model architecture.}
+    \caption{Model architecture (fully convolutional encoder–decoder).}
 \end{figure}
 
 \FloatBarrier
@@ -112,33 +101,30 @@ To enhance the training process and improve model performance, we incorporated s
     \item \textbf{Learning Rate Reduction}: We employed a learning rate reduction strategy that decreases the learning rate when the validation loss plateaus. This allows the model to fine-tune its weights more effectively during later stages of training.
 \end{itemize}
 
+\newpage
+
 \section{Implementation}
 \subsection{Training}
-We trained our U-Net model using the Adam optimizer~\cite{kingma2014adam} with a learning rate of 0.003 and a batch size of 32.
+We trained our FCN model using the Adam optimizer~\cite{kingma2014adam} with a learning rate of 0.003 and a batch size of 32.
 The training was conducted on our own hardware, utilizing a GPU to accelerate the training process.
-We employed the binary cross-entropy loss function, which is suitable for binary segmentation tasks like ship detection.
 The model was trained for 1000 epochs, with early stopping implemented to prevent overfitting.
 
-\subsubsection{Dataset}
-We utilized the Airbus Ship Detection Challenge dataset~\cite{airbus2018challenge}, which comprises high-resolution satellite images annotated with ship masks.
-The dataset includes a diverse range of images, capturing various sea conditions, ship sizes, and orientations.
-
 \subsubsection{Preprocessing}
-To enhance the model's performance, we incorporated data augmentation techniques during training, such as random rotations, flips, and zooms.
+To enhance the model's performance, we incorporated data augmentation techniques during training, such as random rotations, flips, and zooms~\cite{perez2017augmentation, shorten2019survey}.
 This is the main task of the preprocessing step, as it increases the diversity of the training data and helps prevent overfitting.
 Additionally, we applied batch normalization~\cite{ioffe2015batch} to stabilize the training process.
 
 \subsubsection{Problems}
 During the training process, we encountered several challenges that required careful consideration and adjustments to our approach.
-One of the primary issues was dealing with class imbalance in the dataset, as the number of pixels representing ships was significantly lower than the background pixels.
-In the begining we solved this problem by providing more images with ships during training.
-In later trainings however, this problem was mitigated enough by data augmentation techniques, which helped to create a more balanced representation of ship pixels in the training data and the model was able to learn.
+One of the primary issues was dealing with class imbalance in the dataset, as the number of pictures containing ships was significantly lower than the pictures without ships.
+To address this, we implemented data augmentation techniques to increase the representation of ship-containing images in the training set.
+The final ratio is 50-50 between images with and without ships.
 
 \section{Summary}
-In this report, we presented our approach to the Airbus Ship Detection Challenge using a U-Net architecture for ship segmentation in satellite images.
-We discussed our initial attempts with Segment Anything and the challenges we faced, leading us to adopt the U-Net model.
+In this report, we presented our approach to the Airbus Ship Detection Challenge using a fully convolutional encoder–decoder architecture for ship segmentation in satellite images.
+We discussed our initial attempts with Segment Anything and the challenges we faced, leading us to adopt the FCN model.
 Our implementation included various callbacks to enhance training, and we addressed challenges such as class imbalance through data augmentation.
-Overall, our solution demonstrates the effectiveness of deep learning techniques in addressing real-world problems in maritime surveillance.
+Overall, our solution demonstrates the effectiveness of deep learning techniques in addressing real-world problems in maritime surveillance~\cite{long2015fcn, chen2018deeplab, zhou2018unetplusplus}.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
